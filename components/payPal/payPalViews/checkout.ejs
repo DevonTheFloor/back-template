@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://www.paypalobjects.com/webstatic/en_US/developer/docs/css/cardfields.css"
+    />
+    <script
+      src="https://www.paypal.com/sdk/js?components=buttons,hosted-fields&client-id=<%= clientId %>""
+      data-client-token="<%= clientToken %>"
+    ></script>
+  </head>
+  <body>
+    <style>
+      #paiement{
+        width: 50%;
+        border: 2px solid orange;
+        margin: auto;
+      }
+      p {
+        text-align: center;
+      }
+      #submit{
+        margin: auto;
+        border: 1px solid green;
+      }
+      .card_container{
+        border: 2px solid red;
+        width: 50%;
+      }
+    </style>
+    <div id="paiement">
+      <p>Vous pouvez régler avec votre carte habituelle:</p>
+      <div class="card_container">
+        <form id="card-form">
+        <label for="card-number">Numéro de la carte</label>
+        <div id="card-number" class="card_field"></div>
+        <div style="display: flex; flex-direction: row;">
+          <div>
+            <label for="expiration-date">Date d'expiration</label>
+            <div id="expiration-date" class="card_field"></div>
+          </div>
+          <div style="margin-left: 10px;">
+            <label for="cvv">CVV</label>
+            <div id="cvv" class="card_field"></div>
+          </div>
+        </div>
+        <label for="card-holder-name">Nom sur la carte</label>
+        <input
+          type="text"
+          id="card-holder-name"
+          name="card-holder-name"
+          autocomplete="off"
+          placeholder="nom du propriétaire"
+        />
+        <br /><br />
+        <button value="submit" id="submit" class="btn">Payer ma mensualité</button>
+        </form>
+      </div>
+      <p>Ou avec avec PAY PAl</p>
+      <div id="paypal-button-container" class="paypal-button-container"></div>
+    </div>
+    <script>
+      const home = 'vasavoir';
+      paypal
+        .Buttons({
+          // Sets up the transaction when a payment button is clicked
+          createOrder: function (data, actions) {
+            return fetch("/api/orders", {
+              method: "post",
+              // use the "body" param to optionally pass additional order information
+              // like product ids or amount
+            })
+              .then((response) => response.json())
+              .then((order) => {
+                order.id,
+                console.log('roder id:', order.id)
+
+              });
+          },
+          // Finalize the transaction after payer approval
+          onApprove: function (data, actions) {
+            return fetch(`/api/orders/${data.orderID}/capture`, {
+              method: "post",
+            })
+              .then((response) => response.json())
+              .then((orderData) => {
+                // Successful capture! For dev/demo purposes:
+                console.log(
+                  "Capture result",
+                  orderData,
+                  JSON.stringify(orderData, null, 2)
+                );
+                const transaction = orderData.purchase_units[0].payments.captures[0];
+                alert(`Transaction ${transaction.status}: ${transaction.id}
+
+                  See console for all available details
+                `);
+                // When ready to go live, remove the alert and show a success message within this page. For example:
+                // var element = document.getElementById('paypal-button-container');
+                // element.innerHTML = '<h3>Thank you for your payment!</h3>';
+                // Or go to another URL:  actions.redirect('thank_you.html');
+              });
+          },
+        })
+        .render("#paypal-button-container");
+      // If this returns false or the card fields aren't visible, see Step #1.
+      if (paypal.HostedFields.isEligible()) {
+        let orderId;
+
+        // Renders card fields
+        paypal.HostedFields.render({
+          // Call your server to set up the transaction
+          createOrder: () => {
+            console.log('In CREATE order');
+            return fetch("/api/orders", {
+              method: "post",
+              // use the "body" param to optionally pass additional order information like
+              // product ids or amount.
+            })
+              .then((res) => res.json())
+              .then((orderData) => {
+                orderId = orderData.id; // needed later to complete capture
+                return orderData.id;
+              });
+          },
+          styles: {
+            ".valid": {
+              color: "green",
+            },
+            ".invalid": {
+              color: "red",
+            },
+          },
+          fields: {
+            number: {
+              selector: "#card-number",
+              placeholder: "4111 1111 1111 1111",
+            },
+            cvv: {
+              selector: "#cvv",
+              placeholder: "123",
+            },
+            expirationDate: {
+              selector: "#expiration-date",
+              placeholder: "MM/YY",
+            },
+          },
+        }).then((cardFields) => {
+          console.log('CARD FIELD :', cardFields);
+          console.log('type: ', typeof(cardFields));
+          document.querySelector("#card-form").addEventListener("submit", (event) => {
+            event.preventDefault();
+            cardFields
+              .submit({
+                // Cardholder's first and last name
+                cardholderName: document.getElementById("card-holder-name").value,
+              })
+              .then(() => {
+                fetch(`/api/orders/${orderId}/capture`, {
+                  method: "post",
+                })
+                  .then((res) => res.json())
+                  .then((orderData) => {
+                    // Two cases to handle:
+                    //   (1) Other non-recoverable errors -> Show a failure message
+                    //   (2) Successful transaction -> Show confirmation or thank you
+                    // This example reads a v2/checkout/orders capture response, propagated from the server
+                    // You could use a different API or structure for your 'orderData'
+                    const errorDetail =
+                      Array.isArray(orderData.details) && orderData.details[0];
+                    if (errorDetail) {
+                      var msg = "Désolé, nous rencontrons un problème avec votre paiment";
+                      if (errorDetail.description)
+                        msg += "\n\n" + errorDetail.description;
+                      if (orderData.debug_id) msg += " (" + orderData.debug_id + ")";
+                      return alert(msg); // Show a failure message
+                    }
+                    // Show a success message or redirect
+                    //alert("Transaction completed!" + JSON.stringify(orderData));
+                    feedBackSelling(orderData)
+                    setTimeout(()=> {
+                      window.location.assign(`${home}`);
+                    }, 15000)
+                  });
+              })
+              .catch((err) => {
+                alert("Payment could not be captured! " + JSON.stringify(err));
+              });
+          });
+        });
+      } else {
+        // Hides card fields if the merchant isn't eligible
+        document.querySelector("#card-form").style = "display: none";
+      }
+    function feedBackSelling(datas) {
+  const mount = document.querySelector('#paiement');
+  mount.innerHTML = '';
+  const h3 = document.createElement('h3'),
+    p1 = document.createElement('p'),
+    p2 = document.createElement('p'),
+    p3 = document.createElement('p');
+  h3.textContent = 'MERCI !';
+  h3.style.color = 'green';
+  h3.style.textAlign = 'center';
+  p1.innerHTML = `Votre paiement de <strong>55 €</strong> avec la carte ${datas.payment_source.card.brand} ****${datas.payment_source.card.last_digits} à bien été effectué`;
+  p2.innerHTML = "Vous allez être redirigés sur <strong>Ma E Boulangerie</strong> d'où vous pourrez vous connecter à votre compte.";
+  p3.innerHTML = `Sinon cliquez sur ce lien pour retourner sur <strong>Ma E Boulangerie</strong><br><a href=${home}>https://mon-site.fr</a>`;
+  mount.appendChild(h3);
+  mount.appendChild(p1);
+  mount.appendChild(p2);
+  mount.appendChild(p3);
+}
+  </script>
+  </body>
+</html>
