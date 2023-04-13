@@ -1,8 +1,7 @@
-const Maeb = require('./maebModel');
-const fs =require('fs');
-let mailling = require('../../middlewares/mailling');
+import Schema from './stdModel.js';
+import fs from 'fs';
 
-exports.getAllInCity = (req,res, next) => {
+export const getAllInCity = (req,res, next) => {
     Apprenti.find()
     .then((all)=> {
       res.status(200).json(all);
@@ -10,7 +9,7 @@ exports.getAllInCity = (req,res, next) => {
   .catch(error => console.error(error));
 }
 
-exports.getOne = (req, res, next)=> {
+export const getOne = (req, res, next)=> {
   Apprenti.findOne({
     _id: req.params.id
   })
@@ -25,9 +24,9 @@ exports.getOne = (req, res, next)=> {
   .catch(error => console.error(error));
 }
 
-exports.getRecherche = (req, res) => {
+export const getRecherche = (req, res) => {
 
-  Apprenti.find(
+  Schema.find(
     {...req.body} 
   )
   .then((match) => {
@@ -54,7 +53,7 @@ exports.getRecherche = (req, res) => {
 })
   .catch(error => console.error(error));
 }
-exports.createOne = (req, res, next) => {
+export const createOne = (req, res, next) => {
   console.log("In Da CREATE One");
   console.log('requete :',req.body);
   const apprenti = new Apprenti({
@@ -73,7 +72,7 @@ exports.createOne = (req, res, next) => {
     .catch(error => res.status(400).json({message:"Une erreur est survenue"}));
 }
 
-/*exports.modifyOne = (req, res, next) => {
+/*export const modifyOne = (req, res, next) => {
   const apprentiObject = req.file ?
     {
       ...JSON.parse(req.body.apprenti),
@@ -85,11 +84,11 @@ exports.createOne = (req, res, next) => {
 }*/
 
 
-exports.modifyAll = (req, res, next) => {
+export const modifyAll = (req, res, next) => {
   
 }
 
-exports.deleteOne = (req, res, next) => {
+export const deleteOne = (req, res, next) => {
   const mdp = req.params.mdp;
   Apprenti.findOne({ _id: req.params.id })
     .then(apprenti => {
@@ -107,7 +106,7 @@ exports.deleteOne = (req, res, next) => {
     .catch(error => res.status(500).json({message:"Profil introuvable"}));
 }
 
-exports.deleteAll = (req, res, next) => {
+export const deleteAll = (req, res, next) => {
 
 }
 

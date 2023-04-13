@@ -1,8 +1,9 @@
 {
-  "name": "Back-end",
+  "name": "ES6-Back-end",
   "version": "0.0.0",
   "description": "Standard back end",
-  "main": "serv-api.js",
+  "main": "es6-serv-api.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

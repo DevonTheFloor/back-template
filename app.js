@@ -1,8 +1,9 @@
-const express = require('express'),
-  app = express(),
-  path = require('path'),
-  maebRoutes= require('./components/standard/maebRoutes'),
-  mongoose = require('mongoose');
+import express from 'express';
+import path from 'path';
+import mainRouter from './components/standard/stdRoutes.js';
+import mongoose from 'mongoose';
+
+const app = express();
 
 mongoose.connect(process.env.TATT_DBS,
   { useNewUrlParser: true,
@@ -19,11 +20,11 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use('/photos', express.static(path.join(__dirname, 'photos')));
-app.use('/standard', maebRoutes);
+app.use('/photos', express.static(path.join('photos')));
+app.use('/standard', mainRouter);
 
 app.use('/test', (req, res, next) => {
   res.status(200).json({message: "3Zi Test !!"});
 })
 
-module.exports = app;
+export default app;
